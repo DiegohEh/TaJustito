@@ -3,7 +3,7 @@
 {% block contenido %}
 <h1>Configuración</h1>
 <p>Define la cantidad máxima de horas laborales por día. Esta configuración se utiliza para calcular las diferencias de horas en los registros.</p>
-<form method="post" action="{{ url_for('settings') }}" class="form-config">
+<form method="post" action="{{ url_for('settings') }}" class="form-config card">
     <label for="horas">Horas:</label>
     <input type="number" id="horas" name="horas" min="0" value="{{ horas_actuales }}" required>
     <label for="minutos">Minutos:</label>
