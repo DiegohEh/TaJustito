@@ -553,7 +553,7 @@ document.getElementById('fin_manual').addEventListener('change', updateDuracion)
                 contenido.append(f'<td class="diferencia {clase}">{signo}{horas_diff:02d}:{minutos_diff:02d}</td>')
                 contenido.append('<td>')
                 contenido.append('<details><summary>Mostrar</summary>')
-                contenido.append('<ul>')
+                contenido.append('<ul class="detalle-list">')
                 for reg in item['registros']:
                     dur = reg['duracion']
                     h = dur // 3600
@@ -566,9 +566,9 @@ document.getElementById('fin_manual').addEventListener('change', updateDuracion)
                     else:
                         info = 'Manual'
                     descripcion = reg['descripcion'] or 'Sin descripción'
-                    contenido.append('<li>')
-                    contenido.append(f'{info} — Duración: {h:02d}:{m:02d} — {descripcion}')
-                    contenido.append(f' <a href="/delete/{reg["id"]}" class="btn delete" onclick="return confirm(\'¿Estás seguro de eliminar este registro?\');">Eliminar</a>')
+                    contenido.append('<li class="detalle-item">')
+                    contenido.append(f'<span class="detalle-info">{info} — Duración: {h:02d}:{m:02d} — {descripcion}</span>')
+                    contenido.append(f'<a href="/delete/{reg["id"]}" class="btn delete" onclick="return confirm(\'¿Estás seguro de eliminar este registro?\');">Eliminar</a>')
                     contenido.append('</li>')
                 contenido.append('</ul>')
                 contenido.append('</details>')
