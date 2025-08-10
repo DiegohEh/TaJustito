@@ -181,6 +181,22 @@ a.btn.delete:hover { background: #7f8c8d; }
   color: #fff;
 }
 
+.tabla-registros tbody tr:nth-child(odd) {
+  background: #f9fafb;
+}
+
+.tabla-registros tbody tr:nth-child(even) {
+  background: #ffffff;
+}
+
+.tabla-registros tbody tr {
+  transition: background 0.2s;
+}
+
+.tabla-registros tbody tr:hover {
+  background: rgba(58,186,247,0.15);
+}
+
 .diferencia.positivo { color: var(--success); font-weight: 600; }
 .diferencia.negativo { color: var(--danger); font-weight: 600; }
 
@@ -207,6 +223,31 @@ a.btn.delete:hover { background: #7f8c8d; }
 details summary {
   cursor: pointer;
   color: var(--primary);
+}
+
+.detalle-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detalle-item {
+  background: rgba(108,99,255,0.05);
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.detalle-info {
+  flex: 1;
+  margin-right: 0.5rem;
 }
 
 .acciones-manuales {
