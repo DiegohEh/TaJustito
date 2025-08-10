@@ -20,7 +20,7 @@
 {% endblock %}
 {% block contenido %}
 <h1>Registro de Horas</h1>
-<section class="cronometro">
+<section class="cronometro card">
     <h2>Cronómetro en tiempo real</h2>
     <form method="post" action="{{ url_for('index') }}">
         {% if en_curso %}
@@ -37,7 +37,7 @@
     </form>
 </section>
 
-<section class="manual">
+<section class="manual card">
     <h2>Registro manual</h2>
     <p>Utiliza este formulario para añadir horas manualmente o cancelar excesos/faltantes.</p>
     <form method="post" action="{{ url_for('index') }}">

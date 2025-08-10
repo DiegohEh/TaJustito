@@ -23,6 +23,7 @@
 </div>
 
 {% if resumen %}
+<div class="card">
 <table class="tabla-registros">
     <thead>
         <tr><th>Día</th><th>Total trabajado</th><th>Diferencia</th><th>Detalles</th></tr>
@@ -78,6 +79,7 @@
     <strong>Diferencia acumulada del mes:</strong>
     <span class="diferencia {{ 'negativo' if acumulado < 0 else 'positivo' }}">{{ signo_acum }}{{ '%02d' % horas_acum }}:{{ '%02d' % minutos_acum }}</span>
     (basado en {{ (minutos_maximos//60) }}h {{ (minutos_maximos%60) }}m diarios)
+</div>
 </div>
 {% else %}
     <p>No hay registros para este mes.</p>
