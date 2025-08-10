@@ -1,0 +1,447 @@
+/* Estilos básicos para la aplicación de registro de horas */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f7f7f7;
+    color: #333;
+}
+
+.navbar {
+    background-color: #2c3e50;
+    padding: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.navbar ul li a {
+    color: #ecf0f1;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.navbar ul li a:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 1rem auto;
+    padding: 1rem;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    margin-top: 0;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="text"], input[type="number"], input[type="date"] {
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+button.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button.start {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+button.stop {
+    background-color: #c0392b;
+    color: #fff;
+}
+
+button.manual {
+    background-color: #2980b9;
+    color: #fff;
+}
+
+button.cancel {
+    background-color: #d35400;
+    color: #fff;
+}
+
+button.save {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+a.btn.delete {
+    background-color: #95a5a6;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.5rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.8rem;
+}
+
+a.btn.delete:hover {
+    background-color: #7f8c8d;
+}
+
+.flash-messages {
+    margin-bottom: 1rem;
+}
+
+.flash {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.flash.success {
+    background-color: #dff0d8;
+    color: #3c763d;
+}
+
+.flash.warning {
+    background-color: #fcf8e3;
+    color: #8a6d3b;
+}
+
+/* Tabla de registros */
+.tabla-registros {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-registros th, .tabla-registros td {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.tabla-registros th {
+    background-color: #ecf0f1;
+}
+
+.diferencia.positivo {
+    color: #27ae60;
+    font-weight: bold;
+}
+.diferencia.negativo {
+    color: #c0392b;
+    font-weight: bold;
+}
+
+.mes-navegacion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.mes-navegacion a {
+    text-decoration: none;
+    color: #2980b9;
+}
+
+.mes-actual {
+    font-weight: bold;
+}
+
+details summary {
+    cursor: pointer;
+    color: #2980b9;
+}
+
+/* Agrupa botones manuales */
+.acciones-manuales {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nota, .ayuda {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+/* Resumen de hoy en página principal */
+.resumen-hoy {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+.resumen-hoy .diferencia {
+    font-weight: bold;
+}
+
+/* Grupos de inputs en formulario manual */
+.duracion-y-fin {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.duracion-grupo, .fin-grupo {
+    display: flex;
+    flex-direction: column;
+}
+
+.acumulado {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+}
+
+.form-config {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* ---------- Estilos modernos y variables ---------- */
+:root {
+    --primary: #3498db;
+    --primary-dark: #2980b9;
+    --secondary: #2ecc71;
+    --secondary-dark: #27ae60;
+    --warning: #e67e22;
+    --warning-dark: #d35400;
+    --danger: #e74c3c;
+    --neutral: #ecf0f1;
+    --text-light: #ffffff;
+    --text-dark: #2c3e50;
+}
+
+/* Tarjetas para secciones */
+.card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Navbar moderno */
+.navbar {
+    background-color: var(--primary);
+    padding: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+.navbar ul li a {
+    color: var(--text-light);
+    text-decoration: none;
+    font-weight: bold;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.navbar ul li a:hover {
+    background-color: var(--primary-dark);
+}
+
+/* Botones y enlaces estilo botón */
+button.btn, a.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+}
+button.btn:hover, a.btn:hover {
+    transform: translateY(-2px);
+}
+button.start, a.start {
+    background-color: var(--secondary);
+    color: var(--text-light);
+}
+button.stop, a.stop {
+    background-color: var(--danger);
+    color: var(--text-light);
+}
+button.manual, a.manual {
+    background-color: var(--primary);
+    color: var(--text-light);
+}
+button.cancel, a.cancel {
+    background-color: var(--warning);
+    color: var(--text-light);
+}
+button.save, a.save {
+    background-color: var(--secondary);
+    color: var(--text-light);
+}
+a.btn.delete {
+    background-color: #95a5a6;
+    color: var(--text-light);
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+a.btn.delete:hover {
+    background-color: #7f8c8d;
+}
+
+/* Inputs modernos */
+input[type="text"], input[type="number"], input[type="date"], input[type="datetime-local"] {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="datetime-local"]:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 4px rgba(52, 152, 219, 0.4);
+    outline: none;
+}
+
+/* Resumen de hoy */
+.resumen-hoy {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+.resumen-hoy .diferencia {
+    font-weight: bold;
+}
+
+/* Grupos de inputs en formulario manual */
+.duracion-y-fin {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.duracion-grupo, .fin-grupo {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+/* ---------- Calendario semanal ---------- */
+.calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.week-nav {
+    color: #2980b9;
+    text-decoration: none;
+    margin: 0 0.5rem;
+}
+.week-range {
+    font-weight: bold;
+}
+.zoom-buttons button {
+    margin-left: 0.5rem;
+    padding: 0.3rem 0.6rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #bdc3c7;
+    color: #2c3e50;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.zoom-buttons button:hover {
+    background-color: #95a5a6;
+}
+
+.calendar-grid {
+    display: flex;
+    width: 100%;
+    position: relative;
+    border: 1px solid #ddd;
+    overflow-x: auto;
+}
+.time-labels {
+    width: 60px;
+    position: relative;
+    border-right: 1px solid #ddd;
+    flex-shrink: 0;
+}
+.time-labels .time-label {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    font-size: 0.7rem;
+    color: #7f8c8d;
+    border-top: 1px solid #eee;
+    padding-top: 0.1rem;
+}
+
+.day-column {
+    flex: 1;
+    min-width: 120px;
+    border-right: 1px solid #ddd;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.day-header {
+    background-color: #ecf0f1;
+    padding: 0.3rem;
+    font-size: 0.8rem;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+.events-container {
+    position: relative;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+.event-block {
+    position: absolute;
+    left: 5px;
+    right: 5px;
+    background-color: #3498db;
+    color: #fff;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.7rem;
+    overflow: hidden;
+    box-sizing: border-box;
+}

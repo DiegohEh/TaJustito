@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Registro de Horas{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Podrías incluir aquí otros enlaces a frameworks CSS como Bootstrap si lo prefieres -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    {% block head_scripts %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <!-- Barra de navegación simple -->
+        <ul>
+            <li><a href="{{ url_for('index') }}">Inicio</a></li>
+            <li><a href="{{ url_for('logs') }}">Registros</a></li>
+            <li><a href="{{ url_for('calendar') }}">Calendario</a></li>
+            <li><a href="{{ url_for('settings') }}">Configuración</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+        {% block contenido %}{% endblock %}
+    </div>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

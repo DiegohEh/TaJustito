@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block titulo %}Registros - Registro de Horas{% endblock %}
+{% block contenido %}
+<h1>Registros del mes</h1>
+
+<!-- Navegación de meses -->
+<div class="mes-navegacion">
+    {% set prev_month = month - 1 %}
+    {% set prev_year = year %}
+    {% if prev_month < 1 %}
+        {% set prev_month = 12 %}
+        {% set prev_year = year - 1 %}
+    {% endif %}
+    {% set next_month = month + 1 %}
+    {% set next_year = year %}
+    {% if next_month > 12 %}
+        {% set next_month = 1 %}
+        {% set next_year = year + 1 %}
+    {% endif %}
+    <a href="{{ url_for('logs', month=prev_month, year=prev_year) }}" class="mes-link">&lt; Mes anterior</a>
+    <span class="mes-actual">{{ '{:02d}'.format(month) }}/{{ year }}</span>
+    <a href="{{ url_for('logs', month=next_month, year=next_year) }}" class="mes-link">Mes siguiente &gt;</a>
+</div>
+
+{% if resumen %}
+<table class="tabla-registros">
+    <thead>
+        <tr><th>Día</th><th>Total trabajado</th><th>Diferencia</th><th>Detalles</th></tr>
+    </thead>
+    <tbody>
+    {% for item in resumen %}
+        {% set total_sec = item.total %}
+        {% set horas_total = total_sec // 3600 %}
+        {% set minutos_total = (total_sec % 3600) // 60 %}
+        {% set segundos_total = total_sec % 60 %}
+        {% set diff_sec = item.diferencia %}
+        {% set abs_sec = diff_sec|abs %}
+        {% set horas_diff = abs_sec // 3600 %}
+        {% set minutos_diff = (abs_sec % 3600) // 60 %}
+        {% set segundos_diff = abs_sec % 60 %}
+        {% set signo = '-' if diff_sec < 0 else '+' %}
+        <tr>
+            <td>{{ item.fecha }}</td>
+            <td>{{ '%02d' % horas_total }}:{{ '%02d' % minutos_total }}</td>
+            <td class="diferencia {{ 'negativo' if diff_sec < 0 else 'positivo' }}">{{ signo }}{{ '%02d' % horas_diff }}:{{ '%02d' % minutos_diff }}</td>
+            <td>
+                <details>
+                    <summary>Mostrar</summary>
+                    <ul>
+                        {% for reg in item.registros %}
+                            {% set dur = reg.duracion %}
+                            {% set h = dur // 3600 %}
+                            {% set m = (dur % 3600) // 60 %}
+                            {% set s = dur % 60 %}
+                            <li>
+                                {% if reg['inicio'] %}
+                                    Inicio: {{ reg['inicio'][:19].replace('T',' ') }} -
+                                    {% if reg['fin'] %} Fin: {{ reg['fin'][:19].replace('T',' ') }} {% else %} (en curso) {% endif %}
+                                {% else %}
+                                    Manual
+                                {% endif %}
+                                — Duración: {{ '%02d' % h }}:{{ '%02d' % m }} — {{ reg['descripcion'] or 'Sin descripción' }}
+                                <a href="{{ url_for('delete_registro', registro_id=reg['id']) }}" class="btn delete" onclick="return confirm('¿Estás seguro de eliminar este registro?');">Eliminar</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<div class="acumulado">
+    {% set abs_acum = acumulado|abs %}
+    {% set horas_acum = abs_acum // 3600 %}
+    {% set minutos_acum = (abs_acum % 3600) // 60 %}
+    {% set signo_acum = '-' if acumulado < 0 else '+' %}
+    <strong>Diferencia acumulada del mes:</strong>
+    <span class="diferencia {{ 'negativo' if acumulado < 0 else 'positivo' }}">{{ signo_acum }}{{ '%02d' % horas_acum }}:{{ '%02d' % minutos_acum }}</span>
+    (basado en {{ (minutos_maximos//60) }}h {{ (minutos_maximos%60) }}m diarios)
+</div>
+{% else %}
+    <p>No hay registros para este mes.</p>
+{% endif %}
+{% endblock %}

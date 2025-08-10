@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block titulo %}Configuración - Registro de Horas{% endblock %}
+{% block contenido %}
+<h1>Configuración</h1>
+<p>Define la cantidad máxima de horas laborales por día. Esta configuración se utiliza para calcular las diferencias de horas en los registros.</p>
+<form method="post" action="{{ url_for('settings') }}" class="form-config">
+    <label for="horas">Horas:</label>
+    <input type="number" id="horas" name="horas" min="0" value="{{ horas_actuales }}" required>
+    <label for="minutos">Minutos:</label>
+    <input type="number" id="minutos" name="minutos" min="0" max="59" value="{{ minutos_actuales }}" required>
+    <button type="submit" class="btn save">Guardar</button>
+</form>
+<p>Valor actual: {{ horas_actuales }}h {{ minutos_actuales }}m por día.</p>
+{% endblock %}
