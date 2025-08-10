@@ -23,6 +23,7 @@
 </div>
 
 {% if resumen %}
+<div class="card">
 <table class="tabla-registros">
     <thead>
         <tr><th>Día</th><th>Total trabajado</th><th>Diferencia</th><th>Detalles</th></tr>
@@ -46,13 +47,14 @@
             <td>
                 <details>
                     <summary>Mostrar</summary>
-                    <ul>
+                    <ul class="detalle-list">
                         {% for reg in item.registros %}
                             {% set dur = reg.duracion %}
                             {% set h = dur // 3600 %}
                             {% set m = (dur % 3600) // 60 %}
                             {% set s = dur % 60 %}
-                            <li>
+                            <li class="detalle-item">
+                                <span class="detalle-info">
                                 {% if reg['inicio'] %}
                                     Inicio: {{ reg['inicio'][:19].replace('T',' ') }} -
                                     {% if reg['fin'] %} Fin: {{ reg['fin'][:19].replace('T',' ') }} {% else %} (en curso) {% endif %}
@@ -60,6 +62,7 @@
                                     Manual
                                 {% endif %}
                                 — Duración: {{ '%02d' % h }}:{{ '%02d' % m }} — {{ reg['descripcion'] or 'Sin descripción' }}
+                                </span>
                                 <a href="{{ url_for('delete_registro', registro_id=reg['id']) }}" class="btn delete" onclick="return confirm('¿Estás seguro de eliminar este registro?');">Eliminar</a>
                             </li>
                         {% endfor %}
@@ -78,6 +81,7 @@
     <strong>Diferencia acumulada del mes:</strong>
     <span class="diferencia {{ 'negativo' if acumulado < 0 else 'positivo' }}">{{ signo_acum }}{{ '%02d' % horas_acum }}:{{ '%02d' % minutos_acum }}</span>
     (basado en {{ (minutos_maximos//60) }}h {{ (minutos_maximos%60) }}m diarios)
+</div>
 </div>
 {% else %}
     <p>No hay registros para este mes.</p>
