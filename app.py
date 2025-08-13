@@ -39,6 +39,9 @@ PALETA_COLORES = [
     '#000075', '#808080'
 ]
 
+# Nombres de los días para mapear columnas de máximo por día
+DIAS_SEMANA = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo']
+
 
 def color_aleatorio() -> str:
     return random.choice(PALETA_COLORES)
@@ -83,6 +86,12 @@ def inicializar_db():
             max_diario INTEGER NOT NULL DEFAULT 0
         )'''
     )
+    # Añade columnas de máximos por día si no existen
+    for dia in DIAS_SEMANA:
+        try:
+            cur.execute(f'ALTER TABLE tags ADD COLUMN max_{dia} INTEGER NOT NULL DEFAULT 0')
+        except sqlite3.OperationalError:
+            pass
     # Tabla relación registro-tags
     cur.execute(
         '''CREATE TABLE IF NOT EXISTS registro_tags (
@@ -127,12 +136,18 @@ def obtener_tags():
     return rows
 
 
-def crear_tag(nombre: str, max_diario: int = 0) -> int:
+def crear_tag(nombre: str, max_por_dia=None) -> int:
+    """Crea un tag con un color aleatorio y límites por día."""
+    if max_por_dia is None:
+        max_por_dia = [0] * 7
     conn = obtener_conexion()
     cur = conn.cursor()
     color = color_aleatorio()
-    cur.execute('INSERT INTO tags (nombre, color, max_diario) VALUES (?, ?, ?)',
-                (nombre, color, max_diario))
+    cur.execute(
+        'INSERT INTO tags (nombre, color, max_diario, max_lunes, max_martes, max_miercoles, max_jueves, max_viernes, max_sabado, max_domingo) '
+        'VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
+        (nombre, color, *max_por_dia)
+    )
     conn.commit()
     tag_id = cur.lastrowid
     conn.close()
@@ -239,6 +254,8 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
             self.render_calendar(query, message, msg_type)
         elif path.startswith('/tags/delete/'):
             self.handle_delete_tag(path)
+        elif path.startswith('/tags/color/'):
+            self.handle_regen_color(path)
         elif path.startswith('/tags'):
             self.render_tags(message, msg_type)
         elif path.startswith('/delete/'):
@@ -419,23 +436,25 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
             accion = get_val('accion')
             if accion == 'crear':
                 nombre = get_val('nombre').strip()
-                max_m = int(get_val('max', '0') or '0')
+                maximos = [int(get_val(d, '0') or '0') for d in DIAS_SEMANA]
                 if not nombre:
                     self.redirect_with_message('/tags', 'Debes indicar un nombre.', 'warning')
                 else:
                     try:
-                        crear_tag(nombre, max_m)
+                        crear_tag(nombre, maximos)
                         self.redirect_with_message('/tags', 'Tag creado.', 'success')
                     except sqlite3.IntegrityError:
                         self.redirect_with_message('/tags', 'El tag ya existe.', 'warning')
             elif accion == 'editar':
                 tag_id = int(get_val('id', '0'))
                 nombre = get_val('nombre').strip()
-                max_m = int(get_val('max', '0') or '0')
+                maximos = [int(get_val(d, '0') or '0') for d in DIAS_SEMANA]
                 conn = obtener_conexion()
                 try:
-                    conn.execute('UPDATE tags SET nombre=?, max_diario=? WHERE id=?',
-                                 (nombre, max_m, tag_id))
+                    conn.execute(
+                        'UPDATE tags SET nombre=?, max_diario=0, max_lunes=?, max_martes=?, max_miercoles=?, max_jueves=?, max_viernes=?, max_sabado=?, max_domingo=? WHERE id=?',
+                        (nombre, *maximos, tag_id)
+                    )
                     conn.commit()
                     self.redirect_with_message('/tags', 'Tag actualizado.', 'success')
                 except sqlite3.IntegrityError:
@@ -519,6 +538,20 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
         conn.close()
         self.redirect_with_message('/tags', 'Tag eliminado.', 'success')
 
+    def handle_regen_color(self, path: str):
+        """Regenera el color de un tag."""
+        try:
+            tag_id = int(path.split('/')[-1])
+        except ValueError:
+            self.send_error(400, 'ID de tag no válido')
+            return
+        conn = obtener_conexion()
+        color = color_aleatorio()
+        conn.execute('UPDATE tags SET color=? WHERE id=?', (color, tag_id))
+        conn.commit()
+        conn.close()
+        self.redirect_with_message('/tags', 'Color regenerado.', 'success')
+
     def render_tags(self, message: str, msg_type: str):
         tags = obtener_tags()
         contenido = []
@@ -529,8 +562,9 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
         contenido.append('<input type="hidden" name="accion" value="crear">')
         contenido.append('<label>Nombre:</label>')
         contenido.append('<input type="text" name="nombre" required>')
-        contenido.append('<label>Máximo diario (minutos):</label>')
-        contenido.append('<input type="number" name="max" min="0" value="0">')
+        for d in DIAS_SEMANA:
+            contenido.append(f'<label>{d.capitalize()} (minutos):</label>')
+            contenido.append(f'<input type="number" name="{d}" min="0" value="0">')
         contenido.append('<button type="submit" class="btn save">Crear</button>')
         contenido.append('</form>')
         contenido.append('</div>')
@@ -545,9 +579,11 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
                 contenido.append('<input type="hidden" name="accion" value="editar">')
                 contenido.append(f'<input type="hidden" name="id" value="{t["id"]}">')
                 contenido.append(f'<input type="text" name="nombre" value="{t["nombre"]}" required>')
-                contenido.append(f'<input type="number" name="max" min="0" value="{t["max_diario"]}" style="width:80px;">')
+                for d in DIAS_SEMANA:
+                    contenido.append(f'{d[:3].capitalize()}:<input type="number" name="{d}" min="0" value="{t["max_"+d]}" style="width:60px;">')
                 contenido.append('<button type="submit" class="btn save">Guardar</button>')
                 contenido.append('</form>')
+                contenido.append(f'<a href="/tags/color/{t["id"]}" class="btn save">Color</a>')
                 contenido.append(f'<a href="/tags/delete/{t["id"]}" class="btn delete">Eliminar</a>')
                 contenido.append('</li>')
             contenido.append('</ul>')
@@ -565,17 +601,40 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
             en_curso = True
             inicio = datetime.fromisoformat(reg_activo['inicio'])
             tiempo_transcurrido = int((datetime.now() - inicio).total_seconds())
-        minutos_maximos = obtener_horas_maximas()
-        # Calcula el total de hoy y la diferencia con el máximo diario
-        fecha_hoy = date.today().isoformat()
+        fecha_hoy = date.today()
+        hoy_str = fecha_hoy.isoformat()
+        dia_col = 'max_' + DIAS_SEMANA[fecha_hoy.weekday()]
         conn = obtener_conexion()
         cur = conn.cursor()
-        cur.execute('SELECT duracion FROM registros WHERE fecha = ?', (fecha_hoy,))
-        total_hoy_segundos = sum(r['duracion'] for r in cur.fetchall())
+        # Totales por tag para hoy
+        cur.execute(
+            f'''SELECT t.*, SUM(r.duracion) as total FROM registros r
+                JOIN registro_tags rt ON r.id = rt.registro_id
+                JOIN tags t ON t.id = rt.tag_id
+                WHERE r.fecha = ?
+                GROUP BY t.id''',
+            (hoy_str,)
+        )
+        tags_tot = cur.fetchall()
+        # Registros sin tag
+        cur.execute('''SELECT SUM(duracion) as total FROM registros WHERE fecha=? AND id NOT IN (SELECT registro_id FROM registro_tags)''', (hoy_str,))
+        row = cur.fetchone()
+        sin_tag_total = row['total'] or 0
         conn.close()
-        # Si hay un cronómetro activo, añadimos el tiempo transcurrido actual
-        total_hoy_segundos += tiempo_transcurrido
-        diferencia_hoy = total_hoy_segundos - minutos_maximos * 60
+        # Agregar tiempo transcurrido del cronómetro activo
+        por_tag = {t['id']: {'row': t, 'total': t['total']} for t in tags_tot}
+        if reg_activo:
+            tags_activos = obtener_tags_de_registro(reg_activo['id'])
+            activos_ids = [t['id'] for t in tags_activos]
+            for t in tags_activos:
+                if t['id'] in por_tag:
+                    por_tag[t['id']]['total'] += tiempo_transcurrido
+                else:
+                    t_dict = dict(t)
+                    por_tag[t['id']] = {'row': t_dict, 'total': tiempo_transcurrido}
+        else:
+            activos_ids = []
+        total_hoy_segundos = sin_tag_total + sum(v['total'] for v in por_tag.values())
         # Construye contenido HTML de la página
         contenido = []
         contenido.append('<h1>Registro de Horas</h1>')
@@ -588,17 +647,30 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
                 html.append(f'<label><input type="checkbox" name="tags" value="{t["id"]}"><span class="tag" style="background:{t["color"]};">{t["nombre"]}</span></label>')
             html.append('</div>')
             return ''.join(html)
-        # Resumen de hoy
-        horas_totales = total_hoy_segundos // 3600
-        minutos_totales = (total_hoy_segundos % 3600) // 60
-        abs_diff = abs(diferencia_hoy)
-        horas_diff = abs_diff // 3600
-        minutos_diff = (abs_diff % 3600) // 60
-        signo_diff = '-' if diferencia_hoy < 0 else '+'
-        clase_diff = 'negativo' if diferencia_hoy < 0 else 'positivo'
+        # Resumen de hoy por tag
         contenido.append('<div class="resumen-hoy card">')
-        contenido.append(f'<strong>Hoy:</strong> <span id="total_hoy">{horas_totales:02d}:{minutos_totales:02d}</span> ')
-        contenido.append(f'(<span id="diferencia_hoy" class="diferencia {clase_diff}">{signo_diff}{horas_diff:02d}:{minutos_diff:02d}</span>)')
+        totales_js = {}
+        for tid, info in por_tag.items():
+            trow = info['row']
+            total = info['total']
+            max_seg = trow[dia_col] * 60
+            diff = total - max_seg
+            h = total // 3600
+            m = (total % 3600) // 60
+            abs_d = abs(diff)
+            hd = abs_d // 3600
+            md = (abs_d % 3600) // 60
+            signo = '-' if diff < 0 else '+'
+            clase = 'negativo' if diff < 0 else 'positivo'
+            contenido.append(f"{trow['nombre']} : <span id='tag_total_{tid}'>{h:02d}:{m:02d}</span> (<span id='tag_diff_{tid}' class='diferencia {clase}'>{signo}{hd:02d}:{md:02d}</span>)<br>")
+            totales_js[str(tid)] = {'total': total, 'max': max_seg}
+        if sin_tag_total:
+            h = sin_tag_total // 3600
+            m = (sin_tag_total % 3600) // 60
+            contenido.append(f'sin tag : {h:02d}:{m:02d}<br>')
+        htot = total_hoy_segundos // 3600
+        mtot = (total_hoy_segundos % 3600) // 60
+        contenido.append(f"<strong>TOTAL : <span id='total_hoy'>{htot:02d}:{mtot:02d}</span></strong>")
         contenido.append('</div>')
         # Sección cronómetro
         contenido.append('<section class="cronometro card">')
@@ -608,8 +680,7 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
             contenido.append(f'<p>Tiempo transcurrido: <span id="tiempo_transcurrido">{formatear_segundos_completo(tiempo_transcurrido)}</span></p>')
             contenido.append('<input type="hidden" name="accion" value="stop">')
             contenido.append('<button type="submit" class="btn stop">Detener</button>')
-            # Script para actualizar el cronómetro y el total de hoy
-            extra_scripts = f"<script>\nlet segundosTranscurridos = {tiempo_transcurrido};\nlet totalHoySegundos = {total_hoy_segundos};\nconst minutosMaximos = {minutos_maximos};\nfunction actualizarCronometro() {{\n  segundosTranscurridos++;\n  totalHoySegundos++;\n  // Actualiza cronómetro individual\n  const h = Math.floor(segundosTranscurridos/3600);\n  const m = Math.floor((segundosTranscurridos%3600)/60);\n  const s = segundosTranscurridos%60;\n  document.getElementById('tiempo_transcurrido').textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');\n  // Actualiza resumen de hoy\n  const ht = Math.floor(totalHoySegundos/3600);\n  const mt = Math.floor((totalHoySegundos%3600)/60);\n  document.getElementById('total_hoy').textContent = String(ht).padStart(2,'0')+':'+String(mt).padStart(2,'0');\n  const diff = totalHoySegundos - (minutosMaximos*60);\n  const absDiff = Math.abs(diff);\n  const hd = Math.floor(absDiff/3600);\n  const md = Math.floor((absDiff%3600)/60);\n  const sign = diff < 0 ? '-' : '+';\n  const diffElem = document.getElementById('diferencia_hoy');\n  diffElem.textContent = sign + String(hd).padStart(2,'0') + ':' + String(md).padStart(2,'0');\n  diffElem.className = 'diferencia ' + (diff < 0 ? 'negativo' : 'positivo');\n}}\nsetInterval(actualizarCronometro, 1000);\n</script>"
+            extra_scripts = f"<script>\nlet segundosTranscurridos = {tiempo_transcurrido};\nlet totalHoySegundos = {total_hoy_segundos};\nfunction actualizarCronometro() {{\n  segundosTranscurridos++;\n  totalHoySegundos++;\n  const h = Math.floor(segundosTranscurridos/3600);\n  const m = Math.floor((segundosTranscurridos%3600)/60);\n  const s = segundosTranscurridos%60;\n  document.getElementById('tiempo_transcurrido').textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');\n  const ht = Math.floor(totalHoySegundos/3600);\n  const mt = Math.floor((totalHoySegundos%3600)/60);\n  document.getElementById('total_hoy').textContent = String(ht).padStart(2,'0')+':'+String(mt).padStart(2,'0');\n}}\nsetInterval(actualizarCronometro, 1000);\n</script>"
         else:
             contenido.append('<p>No hay un cronómetro corriendo actualmente.</p>')
             contenido.append('<input type="hidden" name="accion" value="start">')
@@ -617,8 +688,7 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
             contenido.append('<input type="text" id="descripcion" name="descripcion" placeholder="¿Qué estás haciendo?">')
             contenido.append(selector_tags())
             contenido.append('<button type="submit" class="btn start">Iniciar</button>')
-            # También inicializa variables para que el resumen de hoy se actualice correctamente cuando no hay cronómetro
-            extra_scripts = f"<script>let totalHoySegundos = {total_hoy_segundos}; const minutosMaximos = {minutos_maximos};</script>"
+            extra_scripts = f"<script>let totalHoySegundos = {total_hoy_segundos};</script>"
         contenido.append('</form>')
         contenido.append('</section>')
         # Sección de registro manual con inicio y fin
@@ -659,7 +729,6 @@ class TimeTrackerHandler(BaseHTTPRequestHandler):
         contenido.append(selector_tags())
         contenido.append('<button type="submit" class="btn cancel">Cancelar horas</button>')
         contenido.append('</form>')
-        contenido.append(f'<p class="nota">Horas máximas diarias configuradas: {minutos_maximos//60}h {minutos_maximos%60}m.</p>')
         contenido.append('</section>')
         # Script para sincronizar campos de duración y fin en el formulario manual
         extra_scripts += """
@@ -731,21 +800,41 @@ document.getElementById('fin_manual').addEventListener('change', updateDuracion)
         registros_por_dia = {}
         for row in rows:
             registros_por_dia.setdefault(row['fecha'], []).append(row)
-        # Obtener configuración
-        minutos_maximos = obtener_horas_maximas()
+        tags_all = obtener_tags()
+        acumulado_por_tag = {t['id']: {'nombre': t['nombre'], 'diferencia': 0} for t in tags_all}
+        # Resta máximos por cada día del mes
+        dia_iter = desde
+        while dia_iter < hasta:
+            col = 'max_' + DIAS_SEMANA[dia_iter.weekday()]
+            for t in tags_all:
+                acumulado_por_tag[t['id']]['diferencia'] -= t[col] * 60
+            dia_iter += timedelta(days=1)
         resumen = []
-        acumulado = 0
         for f, regs in registros_por_dia.items():
+            fecha_dt = date.fromisoformat(f)
+            col = 'max_' + DIAS_SEMANA[fecha_dt.weekday()]
             total = sum(r['duracion'] for r in regs)
-            cur.execute('''SELECT t.id, t.nombre, t.color, t.max_diario, SUM(r.duracion) as total
-                           FROM registros r JOIN registro_tags rt ON r.id = rt.registro_id
-                           JOIN tags t ON t.id = rt.tag_id
-                           WHERE r.fecha = ?
-                           GROUP BY t.id''', (f,))
-            tags_tot = cur.fetchall()
-            diferencia = sum(t['total'] - t['max_diario'] * 60 for t in tags_tot)
-            acumulado += diferencia
-            resumen.append({'fecha': f, 'total': total, 'diferencia': diferencia, 'registros': regs, 'tags': tags_tot})
+            cur.execute(f'''SELECT t.*, SUM(r.duracion) as total
+                             FROM registros r JOIN registro_tags rt ON r.id = rt.registro_id
+                             JOIN tags t ON t.id = rt.tag_id
+                             WHERE r.fecha = ?
+                             GROUP BY t.id''', (f,))
+            tags_tot = list(cur.fetchall())
+            cur.execute('''SELECT SUM(duracion) as total FROM registros WHERE fecha=? AND id NOT IN (SELECT registro_id FROM registro_tags)''', (f,))
+            row = cur.fetchone()
+            sin_tag_total = row['total'] or 0
+            if sin_tag_total:
+                tags_tot.append({'id': None, 'nombre': 'sin tag', 'color': '#666', col: 0, 'total': sin_tag_total})
+                acumulado_por_tag.setdefault(None, {'nombre': 'sin tag', 'diferencia': 0})
+                acumulado_por_tag[None]['diferencia'] += sin_tag_total
+            diferencia = 0
+            for t in tags_tot:
+                max_seg = t[col] * 60 if t.get(col) is not None else 0
+                diff_t = t['total'] - max_seg
+                diferencia += diff_t
+                if t.get('id') is not None:
+                    acumulado_por_tag[t['id']]['diferencia'] += t['total']
+            resumen.append({'fecha': f, 'total': total, 'diferencia': diferencia, 'registros': regs, 'tags': tags_tot, 'col': col})
         resumen.sort(key=lambda x: x['fecha'])
         conn.close()
         # Construye tabla HTML
@@ -788,7 +877,8 @@ document.getElementById('fin_manual').addEventListener('change', updateDuracion)
                 for t in item['tags']:
                     h_t = t['total'] // 3600
                     m_t = (t['total'] % 3600) // 60
-                    diff_t = t['total'] - t['max_diario'] * 60
+                    max_seg = t[item['col']] * 60 if t.get(item['col']) is not None else 0
+                    diff_t = t['total'] - max_seg
                     abs_t = abs(diff_t)
                     hd = abs_t // 3600
                     md = (abs_t % 3600) // 60
@@ -824,14 +914,16 @@ document.getElementById('fin_manual').addEventListener('change', updateDuracion)
                 contenido.append('</tr>')
             contenido.append('</tbody></table>')
             # Cálculo acumulado
-            abs_acum = abs(acumulado)
-            horas_acum = abs_acum // 3600
-            minutos_acum = (abs_acum % 3600) // 60
-            signo_acum = '-' if acumulado < 0 else '+'
-            clase_acum = 'negativo' if acumulado < 0 else 'positivo'
             contenido.append('<div class="acumulado">')
-            contenido.append('<strong>Diferencia acumulada del mes:</strong> ')
-            contenido.append(f'<span class="diferencia {clase_acum}">{signo_acum}{horas_acum:02d}:{minutos_acum:02d}</span>')
+            contenido.append('<strong>Diferencia acumulada del mes:</strong><br>')
+            for info in acumulado_por_tag.values():
+                diff = info['diferencia']
+                abs_sec = abs(diff)
+                h = abs_sec // 3600
+                m = (abs_sec % 3600) // 60
+                signo = '-' if diff < 0 else '+'
+                clase = 'negativo' if diff < 0 else 'positivo'
+                contenido.append(f"{info['nombre']}: <span class='diferencia {clase}'>{signo}{h:02d}:{m:02d}</span><br>")
             contenido.append('</div>')
             contenido.append('</div>')  # fin card
         else:
