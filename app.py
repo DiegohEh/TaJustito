@@ -819,7 +819,7 @@ document.getElementById('fin_manual').addEventListener('change', updateDuracion)
                              JOIN tags t ON t.id = rt.tag_id
                              WHERE r.fecha = ?
                              GROUP BY t.id''', (f,))
-            tags_tot = list(cur.fetchall())
+            tags_tot = [dict(r) for r in cur.fetchall()]
             cur.execute('''SELECT SUM(duracion) as total FROM registros WHERE fecha=? AND id NOT IN (SELECT registro_id FROM registro_tags)''', (f,))
             row = cur.fetchone()
             sin_tag_total = row['total'] or 0
